@@ -17,18 +17,19 @@ if typing.TYPE_CHECKING:
 from sqlalchemy import Column, ForeignKey, Integer, BigInteger, String, Text, LargeBinary, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import List
 
 TableDeclarativeBase = declarative_base()
 
 class User(TableDeclarativeBase):
     """A Telegram user who used the bot at least once."""
 
-    user_id: Mapped[BigInteger] = mapped_column(primary_key=True)
-    first_name: Mapped[str] = mapped_column(String, nullable=False)
-    last_name: Mapped[str] = mapped_column(String)
-    username: Mapped[str] = mapped_column(String)
-    language: Mapped[str] = mapped_column(String, nullable=False)
-    credit: Mapped[int] = mapped_column(Integer, nullable=False)
+    user_id = mapped_column(BigInteger, primary_key=True)
+    first_name = mapped_column(String, nullable=False)
+    last_name = mapped_column(String)
+    username = mapped_column(String)
+    language = mapped_column(String, nullable=False)
+    credit = mapped_column(Integer, nullable=False)
 
     __tablename__ = "users"
 
@@ -64,12 +65,12 @@ class User(TableDeclarativeBase):
 class Product(TableDeclarativeBase):
     """A purchasable product."""
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String)
-    description: Mapped[str] = mapped_column(Text)
-    price: Mapped[int] = mapped_column(Integer)
-    image: Mapped[LargeBinary] = mapped_column()
-    deleted: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    id = mapped_column(Integer, primary_key=True)
+    name = mapped_column(String)
+    description = mapped_column(Text)
+    price = mapped_column(Integer)
+    image = mapped_column(LargeBinary)
+    deleted = mapped_column(Boolean, nullable=False)
 
     __tablename__ = "products"
 
@@ -102,22 +103,22 @@ class Product(TableDeclarativeBase):
 class Transaction(TableDeclarativeBase):
     """A greed wallet transaction."""
 
-    transaction_id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[BigInteger] = mapped_column(ForeignKey("users.user_id"), nullable=False)
-    user: Mapped["User"] = relationship("User", backref="transactions")
-    value: Mapped[int] = mapped_column(Integer, nullable=False)
-    refunded: Mapped[bool] = mapped_column(Boolean, default=False)
-    notes: Mapped[str] = mapped_column(Text)
+    transaction_id = mapped_column(Integer, primary_key=True)
+    user_id = mapped_column(BigInteger, ForeignKey("users.user_id"), nullable=False)
+    user = relationship("User", backref="transactions")
+    value = mapped_column(Integer, nullable=False)
+    refunded = mapped_column(Boolean, default=False)
+    notes = mapped_column(Text)
 
-    provider: Mapped[str] = mapped_column(String)
-    telegram_charge_id: Mapped[str] = mapped_column(String)
-    provider_charge_id: Mapped[str] = mapped_column(String)
-    payment_name: Mapped[str] = mapped_column(String)
-    payment_phone: Mapped[str] = mapped_column(String)
-    payment_email: Mapped[str] = mapped_column(String)
+    provider = mapped_column(String)
+    telegram_charge_id = mapped_column(String)
+    provider_charge_id = mapped_column(String)
+    payment_name = mapped_column(String)
+    payment_phone = mapped_column(String)
+    payment_email = mapped_column(String)
 
-    order_id: Mapped[int] = mapped_column(ForeignKey("orders.order_id"))
-    order: Mapped["Order"] = relationship("Order")
+    order_id = mapped_column(Integer, ForeignKey("orders.order_id"))
+    order = relationship("Order")
 
     __tablename__ = "transactions"
     __table_args__ = (UniqueConstraint("provider", "provider_charge_id"),)
@@ -138,14 +139,14 @@ class Transaction(TableDeclarativeBase):
 class Admin(TableDeclarativeBase):
     """A greed administrator with permissions."""
 
-    user_id: Mapped[BigInteger] = mapped_column(ForeignKey("users.user_id"), primary_key=True)
-    user: Mapped["User"] = relationship("User")
-    edit_products: Mapped[bool] = mapped_column(Boolean, default=False)
-    receive_orders: Mapped[bool] = mapped_column(Boolean, default=False)
-    create_transactions: Mapped[bool] = mapped_column(Boolean, default=False)
-    display_on_help: Mapped[bool] = mapped_column(Boolean, default=False)
-    is_owner: Mapped[bool] = mapped_column(Boolean, default=False)
-    live_mode: Mapped[bool] = mapped_column(Boolean, default=False)
+    user_id = mapped_column(BigInteger, ForeignKey("users.user_id"), primary_key=True)
+    user = relationship("User")
+    edit_products = mapped_column(Boolean, default=False)
+    receive_orders = mapped_column(Boolean, default=False)
+    create_transactions = mapped_column(Boolean, default=False)
+    display_on_help = mapped_column(Boolean, default=False)
+    is_owner = mapped_column(Boolean, default=False)
+    live_mode = mapped_column(Boolean, default=False)
 
     __tablename__ = "admins"
 
@@ -156,16 +157,16 @@ class Order(TableDeclarativeBase):
     """An order which has been placed by a user.
     It may include multiple products, available in the OrderItem table."""
 
-    order_id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[BigInteger] = mapped_column(ForeignKey("users.user_id"))
-    user: Mapped["User"] = relationship("User")
-    creation_date: Mapped[DateTime] = mapped_column(nullable=False)
-    delivery_date: Mapped[DateTime] = mapped_column()
-    refund_date: Mapped[DateTime] = mapped_column()
-    refund_reason: Mapped[Text] = mapped_column()
-    items: Mapped[List["OrderItem"]] = relationship("OrderItem")
-    notes: Mapped[Text] = mapped_column()
-    transaction: Mapped["Transaction"] = relationship("Transaction", uselist=False)
+    order_id = mapped_column(Integer, primary_key=True)
+    user_id = mapped_column(BigInteger, ForeignKey("users.user_id"))
+    user = relationship("User")
+    creation_date = mapped_column(DateTime, nullable=False)
+    delivery_date = mapped_column(DateTime)
+    refund_date = mapped_column(DateTime)
+    refund_reason = mapped_column(Text)
+    items = relationship("OrderItem")
+    notes = mapped_column(Text)
+    transaction = relationship("Transaction", uselist=False)
 
     __tablename__ = "orders"
 
@@ -191,10 +192,10 @@ class Order(TableDeclarativeBase):
 class OrderItem(TableDeclarativeBase):
     """A product that has been purchased as part of an order."""
 
-    item_id: Mapped[int] = mapped_column(primary_key=True)
-    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
-    product: Mapped["Product"] = relationship("Product")
-    order_id: Mapped[int] = mapped_column(ForeignKey("orders.order_id"), nullable=False)
+    item_id = mapped_column(Integer, primary_key=True)
+    product_id = mapped_column(Integer, ForeignKey("products.id"), nullable=False)
+    product = relationship("Product")
+    order_id = mapped_column(Integer, ForeignKey("orders.order_id"), nullable=False)
 
     __tablename__ = "orderitems"
 
