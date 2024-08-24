@@ -1,12 +1,13 @@
 import logging
 import typing
+from typing import List
 
 import requests
 import telegram
 from sqlalchemy import Column, ForeignKey, UniqueConstraint
 from sqlalchemy import Integer, BigInteger, String, Text, LargeBinary, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base, DeferredReflection
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, Mapped, mapped_column
 
 import utils
 
@@ -18,20 +19,19 @@ log = logging.getLogger(__name__)
 # Create a base class to define all the database subclasses
 TableDeclarativeBase = declarative_base()
 
-
 # Define all the database tables using the sqlalchemy declarative base
 class User(DeferredReflection, TableDeclarativeBase):
     """A Telegram user who used the bot at least once."""
 
     # Telegram data
-    user_id = Column(BigInteger, primary_key=True)
-    first_name = Column(String, nullable=False)
-    last_name = Column(String)
-    username = Column(String)
-    language = Column(String, nullable=False)
+    user_id: Mapped[BigInteger] = mapped_column(primary_key=True)
+    first_name: Mapped[String] = mapped_column(nullable=False)
+    last_name: Mapped[String] = mapped_column()
+    username: Mapped[String] = mapped_column()
+    language: Mapped[String] = mapped_column(nullable=False)
 
     # Current wallet credit
-    credit = Column(Integer, nullable=False)
+    credit: Mapped[Integer] = mapped_column(nullable=False)
 
     # Extra table parameters
     __tablename__ = "users"
@@ -73,7 +73,7 @@ class User(DeferredReflection, TableDeclarativeBase):
 
     def recalculate_credit(self):
         """Recalculate the credit for this user by calculating the sum of the values of all their transactions."""
-        valid_transactions: typing.List[Transaction] = [t for t in self.transactions if not t.refunded]
+        valid_transactions: List["Transaction"] = [t for t in self.transactions if not t.refunded]
         self.credit = sum(map(lambda t: t.value, valid_transactions))
 
     @property
@@ -86,22 +86,21 @@ class User(DeferredReflection, TableDeclarativeBase):
     def __repr__(self):
         return f"<User {self.mention()} having {self.credit} credit>"
 
-
 class Product(DeferredReflection, TableDeclarativeBase):
     """A purchasable product."""
 
     # Product id
-    id = Column(Integer, primary_key=True)
+    id: Mapped[Integer] = mapped_column(primary_key=True)
     # Product name
-    name = Column(String)
+    name: Mapped[String] = mapped_column()
     # Product description
-    description = Column(Text)
+    description: Mapped[Text] = mapped_column()
     # Product price, if null product is not for sale
-    price = Column(Integer)
+    price: Mapped[Integer] = mapped_column()
     # Image data
-    image = Column(LargeBinary)
+    image: Mapped[LargeBinary] = mapped_column()
     # Product has been deleted
-    deleted = Column(Boolean, nullable=False)
+    deleted: Mapped[Boolean] = mapped_column(nullable=False)
 
     # Extra table parameters
     __tablename__ = "products"
@@ -150,38 +149,36 @@ class Product(DeferredReflection, TableDeclarativeBase):
         # Store the photo in the database record
         self.image = r.content
 
-
 class Transaction(DeferredReflection, TableDeclarativeBase):
     """A greed wallet transaction.
     Wallet credit ISN'T calculated from these, but they can be used to recalculate it."""
-    # TODO: split this into multiple tables
 
     # The internal transaction ID
-    transaction_id = Column(Integer, primary_key=True)
+    transaction_id: Mapped[Integer] = mapped_column(primary_key=True)
     # The user whose credit is affected by this transaction
-    user_id = Column(BigInteger, ForeignKey("users.user_id"), nullable=False)
-    user = relationship("User", backref=backref("transactions"))
+    user_id: Mapped[BigInteger] = mapped_column(ForeignKey("users.user_id"), nullable=False)
+    user: Mapped["User"] = relationship("User", backref=backref("transactions"))
     # The value of this transaction. Can be both negative and positive.
-    value = Column(Integer, nullable=False)
+    value: Mapped[Integer] = mapped_column(nullable=False)
     # Refunded status: if True, ignore the value of this transaction when recalculating
-    refunded = Column(Boolean, default=False)
+    refunded: Mapped[Boolean] = mapped_column(default=False)
     # Extra notes on the transaction
-    notes = Column(Text)
+    notes: Mapped[Text] = mapped_column()
 
     # Payment provider
-    provider = Column(String)
+    provider: Mapped[String] = mapped_column()
     # Transaction ID supplied by Telegram
-    telegram_charge_id = Column(String)
+    telegram_charge_id: Mapped[String] = mapped_column()
     # Transaction ID supplied by the payment provider
-    provider_charge_id = Column(String)
+    provider_charge_id: Mapped[String] = mapped_column()
     # Extra transaction data, may be required by the payment provider in case of a dispute
-    payment_name = Column(String)
-    payment_phone = Column(String)
-    payment_email = Column(String)
+    payment_name: Mapped[String] = mapped_column()
+    payment_phone: Mapped[String] = mapped_column()
+    payment_email: Mapped[String] = mapped_column()
 
     # Order ID
-    order_id = Column(Integer, ForeignKey("orders.order_id"))
-    order = relationship("Order")
+    order_id: Mapped[Integer] = mapped_column(ForeignKey("orders.order_id"))
+    order: Mapped["Order"] = relationship("Order")
 
     # Extra table parameters
     __tablename__ = "transactions"
@@ -200,21 +197,20 @@ class Transaction(DeferredReflection, TableDeclarativeBase):
     def __repr__(self):
         return f"<Transaction {self.transaction_id} for User {self.user_id}>"
 
-
 class Admin(DeferredReflection, TableDeclarativeBase):
     """A greed administrator with his permissions."""
 
     # The telegram id
-    user_id = Column(BigInteger, ForeignKey("users.user_id"), primary_key=True)
-    user = relationship("User")
+    user_id: Mapped[BigInteger] = mapped_column(ForeignKey("users.user_id"), primary_key=True)
+    user: Mapped["User"] = relationship("User")
     # Permissions
-    edit_products = Column(Boolean, default=False)
-    receive_orders = Column(Boolean, default=False)
-    create_transactions = Column(Boolean, default=False)
-    display_on_help = Column(Boolean, default=False)
-    is_owner = Column(Boolean, default=False)
+    edit_products: Mapped[Boolean] = mapped_column(default=False)
+    receive_orders: Mapped[Boolean] = mapped_column(default=False)
+    create_transactions: Mapped[Boolean] = mapped_column(default=False)
+    display_on_help: Mapped[Boolean] = mapped_column(default=False)
+    is_owner: Mapped[Boolean] = mapped_column(default=False)
     # Live mode enabled
-    live_mode = Column(Boolean, default=False)
+    live_mode: Mapped[Boolean] = mapped_column(default=False)
 
     # Extra table parameters
     __tablename__ = "admins"
@@ -222,30 +218,29 @@ class Admin(DeferredReflection, TableDeclarativeBase):
     def __repr__(self):
         return f"<Admin {self.user_id}>"
 
-
 class Order(DeferredReflection, TableDeclarativeBase):
-    """An order which has been placed by an user.
+    """An order which has been placed by a user.
     It may include multiple products, available in the OrderItem table."""
 
     # The unique order id
-    order_id = Column(Integer, primary_key=True)
+    order_id: Mapped[int] = mapped_column(primary_key=True)
     # The user who placed the order
-    user_id = Column(BigInteger, ForeignKey("users.user_id"))
-    user = relationship("User")
+    user_id: Mapped[BigInteger] = mapped_column(ForeignKey("users.user_id"))
+    user: Mapped["User"] = relationship("User")
     # Date of creation
-    creation_date = Column(DateTime, nullable=False)
+    creation_date: Mapped[DateTime] = mapped_column(nullable=False)
     # Date of delivery
-    delivery_date = Column(DateTime)
+    delivery_date: Mapped[DateTime] = mapped_column()
     # Date of refund: if null, product hasn't been refunded
-    refund_date = Column(DateTime)
+    refund_date: Mapped[DateTime] = mapped_column()
     # Refund reason: if null, product hasn't been refunded
-    refund_reason = Column(Text)
+    refund_reason: Mapped[Text] = mapped_column()
     # List of items in the order
-    items: typing.List["OrderItem"] = relationship("OrderItem")
+    items: Mapped[List["OrderItem"]] = relationship("OrderItem")
     # Extra details specified by the purchasing user
-    notes = Column(Text)
+    notes: Mapped[Text] = mapped_column()
     # Linked transaction
-    transaction = relationship("Transaction", uselist=False)
+    transaction: Mapped["Transaction"] = relationship("Transaction", uselist=False)
 
     # Extra table parameters
     __tablename__ = "orders"
@@ -286,23 +281,26 @@ class Order(DeferredReflection, TableDeclarativeBase):
                              value=str(w.Price(-joined_self.transaction.value))) + \
                    (w.loc.get("refund_reason", reason=self.refund_reason) if self.refund_date is not None else "")
 
-
 class OrderItem(DeferredReflection, TableDeclarativeBase):
-    """A product that has been purchased as part of an order."""
+    """An order item in the Order table."""
 
     # The unique item id
-    item_id = Column(Integer, primary_key=True)
-    # The product that is being ordered
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    product = relationship("Product")
-    # The order in which this item is being purchased
-    order_id = Column(Integer, ForeignKey("orders.order_id"), nullable=False)
+    item_id: Mapped[int] = mapped_column(primary_key=True)
+    # The order this item belongs to
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.order_id"))
+    order: Mapped["Order"] = relationship("Order", backref="items")
+    # The product this item refers to
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    product: Mapped["Product"] = relationship("Product")
+    # The quantity of the product in the order
+    quantity: Mapped[int] = mapped_column(nullable=False)
 
     # Extra table parameters
-    __tablename__ = "orderitems"
+    __tablename__ = "order_items"
 
     def text(self, w: "worker.Worker"):
-        return f"{self.product.name} - {str(w.Price(self.product.price))}"
+        """Return the formatted text for this item."""
+        return f"{self.quantity}x {self.product.name} - {w.Price(self.product.price * self.quantity)}"
 
     def __repr__(self):
-        return f"<OrderItem {self.item_id}>"
+        return f"<OrderItem {self.item_id} in Order {self.order_id}>"
